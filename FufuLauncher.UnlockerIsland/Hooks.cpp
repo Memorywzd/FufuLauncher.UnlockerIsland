@@ -436,27 +436,35 @@ uint32_t Hooks::GetCurrentUID() {
 }
 
 static uintptr_t FindHandlerByHash(uintptr_t dispBase, const BYTE hash[4]) {
-    uintptr_t hashAddr = 0;
-    for (uintptr_t s = dispBase; s < dispBase + 0x20000 - 4; s++) {
+    for (uintptr_t s = dispBase; s < dispBase + 0x20000 - 4; ++s) {
         __try {
-            if (memcmp((void*)s, hash, 4) == 0) {
-                if (*(BYTE*)(s - 2) == 0x81 && *(BYTE*)(s - 1) == 0xF9) { hashAddr = s - 2; break; }
-                if (*(BYTE*)(s - 1) == 0x3D) { hashAddr = s - 1; break; }
+            if (memcmp((void*)s, hash, 4) != 0) continue;
+
+            uintptr_t cmpStart  = 0;
+            uintptr_t afterCmp  = 0;
+            if (*(BYTE*)(s - 2) == 0x81 && *(BYTE*)(s - 1) == 0xF9) {
+                cmpStart = s - 2;
+                afterCmp = s + 4;
+            } else if (*(BYTE*)(s - 1) == 0x3D) {
+                cmpStart = s - 1;
+                afterCmp = s + 4;
+            } else continue;
+
+            BYTE b0 = *(BYTE*)afterCmp;
+            BYTE b1 = *(BYTE*)(afterCmp + 1);
+            bool isEq = (b0 == 0x74) || (b0 == 0x75) || (b0 == 0x0F && (b1 == 0x84 || b1 == 0x85));
+            
+            if (isEq) {
+                for (uintptr_t t = cmpStart; t < cmpStart + 0x200; t++) {
+                    if (*(BYTE*)t == 0x41 && *(BYTE*)(t + 1) == 0x5F && *(BYTE*)(t + 2) == 0xE9) {
+                        int32_t rel = *(int32_t*)(t + 3);
+                        return (t + 2) + 5 + rel;
+                    }
+                }
             }
         } __except(EXCEPTION_EXECUTE_HANDLER) { break; }
     }
-    if (!hashAddr) return 0;
-    uintptr_t handler = 0;
-    for (uintptr_t s = hashAddr; s < hashAddr + 0x200; s++) {
-        __try {
-            if (*(BYTE*)s == 0x41 && *(BYTE*)(s + 1) == 0x5F && *(BYTE*)(s + 2) == 0xE9) {
-                int32_t rel = *(int32_t*)(s + 3);
-                handler = (s + 2) + 5 + rel;
-                break;
-            }
-        } __except(EXCEPTION_EXECUTE_HANDLER) { break; }
-    }
-    return handler;
+    return 0;
 }
 
 static uintptr_t FindExpeditionHandler(uintptr_t dispBase, const BYTE hash[4]) {
@@ -521,9 +529,12 @@ static bool ResolveCookingPatches() {
         if (!HelperAddr::CookPatchEntity) ok = false;
         if (HelperAddr::CookPatchPathB) {
             for (uintptr_t s = HelperAddr::CookPatchPathB; s < hEnd - 19; s++) {
-                if (*(BYTE*)s == 0x89 && *(BYTE*)(s+1) == 0x86 &&
-                    *(BYTE*)(s+6) == 0x89 && *(BYTE*)(s+7) == 0x8E &&
-                    *(BYTE*)(s+12) == 0x4C && *(BYTE*)(s+13) == 0x89 && *(BYTE*)(s+14) == 0xB6) {
+                if (*(BYTE*)s        == 0x89 && *(BYTE*)(s + 1)  == 0x86 &&
+                    *(BYTE*)(s + 4)  == 0x00 && *(BYTE*)(s + 5)  == 0x00 &&
+                    *(BYTE*)(s + 6)  == 0x89 && *(BYTE*)(s + 7)  == 0x8E &&
+                    *(BYTE*)(s + 10) == 0x00 && *(BYTE*)(s + 11) == 0x00 &&
+                    *(BYTE*)(s + 12) == 0x4C && *(BYTE*)(s + 13) == 0x89 && *(BYTE*)(s + 14) == 0xB6 &&
+                    *(BYTE*)(s + 18) == 0x00) {
                     HelperAddr::CookPatchFireWr = s;
                     g_CookFireState = *(uint16_t*)(s + 2);
                     g_CookFireParam = *(uint16_t*)(s + 8);
@@ -549,7 +560,8 @@ static bool ResolveCookingPatches() {
                     if (cnt == 1) {
                         HelperAddr::CookPatchNullChk1 = s + 3;
                         for (uintptr_t t = s + 9; t < HelperAddr::CookPatchFireWr; t++) {
-                            if (*(BYTE*)t == 0x48 && *(BYTE*)(t+1) == 0x8B && *(BYTE*)(t+2) == 0x86) {
+                            if (*(BYTE*)t       == 0x48 && *(BYTE*)(t + 1) == 0x8B && *(BYTE*)(t + 2) == 0x86 &&
+                                *(BYTE*)(t + 5) == 0x00 && *(BYTE*)(t + 6) == 0x00) {
                                 HelperAddr::CookPatchNullTgt1 = t; break;
                             }
                         }
@@ -2108,7 +2120,6 @@ void __fastcall hk_SetupResinList(void* pThis) {
         SetupResinList_SafeLogic(pThis);
     }
     __except (EXCEPTION_EXECUTE_HANDLER) {
-        return;
     }
 }
 
