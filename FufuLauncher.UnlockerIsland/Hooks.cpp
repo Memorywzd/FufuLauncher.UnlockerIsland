@@ -915,7 +915,7 @@ bool TryGetCameraMatrix(float& out_rightX, float& out_rightY, float& out_rightZ,
                         float& out_forwardX, float& out_forwardY, float& out_forwardZ) {
     InitCameraMatrixAddress();
     
-    if (!call_GetMainCamera || !call_Camera_GetC2W) {
+    if (!IsValidCodePtr(call_GetMainCamera) || !IsValidCodePtr(call_Camera_GetC2W)) {
         return false;
     }
     
@@ -1045,8 +1045,32 @@ void UpdateFreeCamPhysics() {
     static bool lastToggleKey = false;
     bool currToggleKey = isFocused && (GetAsyncKeyState(cfg.free_cam_key) & 0x8000);
     if (currToggleKey && !lastToggleKey) {
-        FreeCamState::isActive = !FreeCamState::isActive;
-        FreeCamState::velX = FreeCamState::velY = FreeCamState::velZ = 0.0f;
+        if (!FreeCamState::isActive) {
+            bool canEnable = true;
+            InitCameraMatrixAddress();
+            
+            if (Config::Get().enable_free_cam_movement_fix) {
+                if (!IsValidCodePtr(call_GetMainCamera) || !IsValidCodePtr(call_Camera_GetC2W)) {
+                    canEnable = false;
+                }
+            }
+            
+            if (!IsValidCodePtr((void*)o_SetPos.load()) || !IsValidCodePtr(call_GetMainCamera) || !IsValidCodePtr(call_GetTransform)) {
+                canEnable = false;
+            }
+            
+            if (canEnable) {
+                FreeCamState::isActive = true;
+                FreeCamState::velX = FreeCamState::velY = FreeCamState::velZ = 0.0f;
+                std::cout << "[FreeCam] Enabled." << std::endl;
+            } else {
+                std::cout << "[FreeCam] Warning: Hook functions or offsets are invalid. FreeCam cannot be enabled to prevent crashes." << std::endl;
+            }
+        } else {
+            FreeCamState::isActive = false;
+            FreeCamState::velX = FreeCamState::velY = FreeCamState::velZ = 0.0f;
+            std::cout << "[FreeCam] Disabled." << std::endl;
+        }
     }
     lastToggleKey = currToggleKey;
     
@@ -1156,7 +1180,7 @@ void WINAPI hk_ClockPageOk(void* pThis) {
     auto orig = (tButtonClicked)o_ClockPageOk.load();
     
     if (!pThis || IsBadReadPtr(pThis, sizeof(void*))) {
-        if (orig && !IsBadReadPtr((void*)orig, 1)) {
+        if (orig && IsValidCodePtr(orig)) {
             __try { orig(pThis); } __except (EXCEPTION_EXECUTE_HANDLER) {}
         }
         return;
@@ -1171,7 +1195,7 @@ void WINAPI hk_ClockPageOk(void* pThis) {
         handled = false; 
     }
 
-    if (!handled && orig && !IsBadReadPtr((void*)orig, 1)) {
+    if (!handled && orig && IsValidCodePtr(orig)) {
         __try {
             orig(pThis);
         }
@@ -1187,7 +1211,7 @@ void SetPos_SafeLogic(void* pTransform, Vector3* pPos, bool& out_handled) {
     checkTimer++;
     if (FreeCamState::mainCameraTransform == nullptr || checkTimer > 100) {
         checkTimer = 0;
-        if (call_GetMainCamera && call_GetTransform) {
+        if (IsValidCodePtr(call_GetMainCamera) && IsValidCodePtr(call_GetTransform)) {
             void* pCamInfo = call_GetMainCamera();
             if (pCamInfo && !IsBadReadPtr(pCamInfo, sizeof(void*))) {
                 void* realTrans = call_GetTransform(pCamInfo);
@@ -1232,7 +1256,9 @@ void SetPos_SafeLogic(void* pTransform, Vector3* pPos, bool& out_handled) {
             myPos.z = FreeCamState::camZ;
             
             auto orig = (tSetPos)o_SetPos.load();
-            if (orig) orig(pTransform, &myPos);
+            if (orig && IsValidCodePtr(orig)) {
+                orig(pTransform, &myPos);
+            }
             out_handled = true;
             return;
         }
@@ -1243,7 +1269,7 @@ void __fastcall hk_SetPos(void* pTransform, Vector3* pPos) {
     auto orig = (tSetPos)o_SetPos.load();
     
     if (!pTransform || !pPos || IsBadReadPtr(pTransform, sizeof(void*)) || IsBadReadPtr(pPos, sizeof(Vector3))) {
-        if (orig && !IsBadReadPtr((void*)orig, 1)) {
+        if (orig && IsValidCodePtr(orig)) {
             __try { orig(pTransform, pPos); } __except(EXCEPTION_EXECUTE_HANDLER) {}
         }
         return;
@@ -1258,7 +1284,7 @@ void __fastcall hk_SetPos(void* pTransform, Vector3* pPos) {
         FreeCamState::isActive = false;
     }
     
-    if (!handled && orig && !IsBadReadPtr((void*)orig, 1)) {
+    if (!handled && orig && IsValidCodePtr(orig)) {
         __try {
             orig(pTransform, pPos);
         }
