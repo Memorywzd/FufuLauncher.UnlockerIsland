@@ -43,6 +43,8 @@ private:
     
     HANDLE m_hThread{nullptr};
 
+    HANDLE m_hExitEvent{nullptr};
+
     HMODULE m_hXInput{nullptr};
     DWORD (WINAPI* m_XInputGetKeystroke)(DWORD, DWORD, PXINPUT_KEYSTROKE){nullptr};
     

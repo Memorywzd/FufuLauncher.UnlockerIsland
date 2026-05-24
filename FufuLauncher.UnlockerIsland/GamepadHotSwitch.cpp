@@ -22,6 +22,9 @@ LRESULT CALLBACK WindowSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 {
     switch (uMsg)
     {
+    case WM_NCDESTROY:
+        GamepadHotSwitch::GetInstance().Shutdown();
+        return DefSubclassProc(hWnd, uMsg, wParam, lParam);
     case WM_KILLFOCUS:
     case WM_SETFOCUS:
     case WM_WINDOWPOSCHANGING:
@@ -209,6 +212,12 @@ bool GamepadHotSwitch::Initialize()
         return false;
 
     m_isExiting = false;
+
+    if (!m_hExitEvent)
+    {
+        m_hExitEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+    }
+    
     m_hThread = CreateThread(nullptr, 0, [](LPVOID lpParam) -> DWORD
     {
         GamepadHotSwitch* pThis = static_cast<GamepadHotSwitch*>(lpParam);
@@ -233,15 +242,28 @@ bool GamepadHotSwitch::Initialize()
 
 void GamepadHotSwitch::Shutdown()
 {
+    if (m_isExiting) return;
+
     m_isExiting = true;
     m_enabled = false;
+    
+    if (m_hExitEvent)
+    {
+        SetEvent(m_hExitEvent);
+    }
 
     if (m_hThread)
     {
-        WaitForSingleObject(m_hThread, 100);
+        WaitForSingleObject(m_hThread, INFINITE);
 
         CloseHandle(m_hThread);
         m_hThread = nullptr;
+    }
+    
+    if (m_hExitEvent)
+    {
+        CloseHandle(m_hExitEvent);
+        m_hExitEvent = nullptr;
     }
 
     if (m_hXInput)
@@ -427,7 +449,10 @@ void GamepadHotSwitch::MainThread()
         ULONGLONG currentTime = GetTickCount64();
         if (!m_enabled || currentTime <= m_pauseUntilTime)
         {
-            Sleep(2000);
+            if (WaitForSingleObject(m_hExitEvent, 2000) == WAIT_OBJECT_0)
+            {
+                break;
+            }
             continue;
         }
 
@@ -441,6 +466,9 @@ void GamepadHotSwitch::MainThread()
         else if (m_lastKeyboardMouseActivityTime > m_lastGamepadActivityTime + SWITCH_DELAY_MS)
             SendSwitchMessage(false);
 
-        Sleep(50);
+        if (WaitForSingleObject(m_hExitEvent, 50) == WAIT_OBJECT_0)
+        {
+            break;
+        }
     }
 }
