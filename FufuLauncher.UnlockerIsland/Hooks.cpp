@@ -2421,11 +2421,11 @@ void SetupResinList_SafeLogic(void* pThis) {
         UINT32 hight = (UINT32)(item >> 32);
         UINT32 low = (UINT32)(item & 0xFFFFFFFF);
 
-        if (((hight == 106 || low == 106) && !cfg.ResinItem000106) ||
-            ((hight == 201 || low == 201) && !cfg.ResinItem000201) ||
-            ((hight == 107009 || low == 107009) && !cfg.ResinItem107009) ||
-            ((hight == 107012 || low == 107012) && !cfg.ResinItem107012) ||
-            ((hight == 220007 || low == 220007) && !cfg.ResinItem220007))
+        if (((hight == 106 || low == 106) && cfg.ResinItem000106) ||
+                    ((hight == 201 || low == 201) && cfg.ResinItem000201) ||
+                    ((hight == 107009 || low == 107009) && cfg.ResinItem107009) ||
+                    ((hight == 107012 || low == 107012) && cfg.ResinItem107012) ||
+                    ((hight == 220007 || low == 220007) && cfg.ResinItem220007))
         {
             toRemove.push_back(item);
         }

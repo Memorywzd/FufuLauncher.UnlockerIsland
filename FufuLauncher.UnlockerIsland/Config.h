@@ -79,11 +79,11 @@ struct ModConfig {
 
     bool hide_grass_indiscriminate = false;
 
-    bool  ResinItem000106;
-    bool  ResinItem000201;
-    bool  ResinItem107009;
-    bool  ResinItem107012;
-    bool  ResinItem220007;
+    bool ResinItem000106 = false;
+    bool ResinItem000201 = false;
+    bool ResinItem107009 = false;
+    bool ResinItem107012 = false;
+    bool ResinItem220007 = false;
 
     bool enable_clock_speedup = false;
     
