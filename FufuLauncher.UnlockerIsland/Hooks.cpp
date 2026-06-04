@@ -1031,6 +1031,11 @@ namespace CustomUIDFeature {
 void UpdateRealUID() {
     if (g_CurrentUID != 0) return; 
 
+    static ULONGLONG last_check_time = 0;
+    ULONGLONG current_time = GetTickCount64();
+    if (current_time - last_check_time < 500) return;
+    last_check_time = current_time;
+
     uintptr_t base = (uintptr_t)GetModuleHandle(NULL);
     if (!base) return;
 
@@ -2278,18 +2283,23 @@ void WINAPI hk_SetupQuestBanner(void* __this) {
     if (IsValid(findStr) && IsValid(findGO) && IsValid(setActive)) {
         bool hide = false;
         if (cfg.hide_quest_banner) {
-            SafeInvoke([&]
-            {
-                std::string sBanner = XorString::decrypt(EncryptedStrings::QuestBannerPath);
-                auto s = findStr(sBanner.c_str());
-                if (s) { 
-                    auto go = findGO(s); 
-                    if (go) { 
-                        setActive(go, false); 
-                        hide = true; 
-                    } 
-                }
-            });
+            static ULONGLONG last_check_time = 0;
+            ULONGLONG current_time = GetTickCount64();
+            if (current_time - last_check_time >= 500) {
+                last_check_time = current_time;
+                SafeInvoke([&]
+                {
+                    std::string sBanner = XorString::decrypt(EncryptedStrings::QuestBannerPath);
+                    auto s = findStr(sBanner.c_str());
+                    if (s) { 
+                        auto go = findGO(s); 
+                        if (go) { 
+                            setActive(go, false); 
+                            hide = true; 
+                        } 
+                    }
+                });
+            }
         }
         if (hide) return;
     }
