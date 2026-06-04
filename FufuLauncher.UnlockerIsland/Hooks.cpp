@@ -2220,8 +2220,10 @@ int32_t WINAPI hk_ChangeFov(void* __this, float value) {
 
     if (g_RequestCraft.load()) {
         g_RequestCraft.store(false);
-        std::cout << "[Hotkey] Craft function triggered." << std::endl;
-        DoCraftLogic(true);
+        if (cfg.enable_redirect_craft_override) {
+            std::cout << "[Hotkey] Craft function triggered." << std::endl;
+            DoCraftLogic(true);
+        }
     }
 
     DWORD now = GetTickCount();
