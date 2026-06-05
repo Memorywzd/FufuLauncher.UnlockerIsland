@@ -975,6 +975,7 @@ namespace CustomUIDFeature {
             s->chars[2] == L'D' && s->chars[3] == L':' && s->chars[4] == L' ';
     }
 
+    // 验证当前传入字符串是否存在数值特征
     static bool IsUID(Il2CppString_Custom* str) {
         if (!str || str->length < 5 || str->length > 20) return false;
         if (IsAllDigits(str->chars, str->length)) return true;
@@ -985,6 +986,7 @@ namespace CustomUIDFeature {
     static void BuildFakeStrings(void* klass) {
         if (g_ready) return;
 
+        // 直接读取配置文本，不作任何额外的前缀拼接处理
         std::string uidStr = Config::Get().custom_uid_str;
         
         int wLen = MultiByteToWideChar(CP_ACP, 0, uidStr.c_str(), -1, nullptr, 0);
@@ -993,7 +995,7 @@ namespace CustomUIDFeature {
             wUidStr.resize(wLen - 1);
             MultiByteToWideChar(CP_ACP, 0, uidStr.c_str(), -1, &wUidStr[0], wLen);
         } else {
-            wUidStr = L"UID: 999999999";
+            wUidStr = L"999999999";
         }
 
         g_strUID.klass   = klass;
@@ -1006,22 +1008,37 @@ namespace CustomUIDFeature {
 
     static void __fastcall hk_SetText(void* self, Il2CppString_Custom* value, void* method) {
         if (value && IsUID(value)) {
-            BuildFakeStrings(value->klass);
+            bool isTarget = false;
+            auto getName = (tGetName)p_GetName.load();
             
-            Il2CppString_Custom* rep = (Il2CppString_Custom*)&g_strUID;
-            g_oSetText(self, rep, method);
-            
-            if (Config::Get().enable_custom_uid_color && g_oSetColor) {
-                UnityColor newColor = {
-                    Config::Get().custom_uid_color_r,
-                    Config::Get().custom_uid_color_g,
-                    Config::Get().custom_uid_color_b,
-                    Config::Get().custom_uid_color_a
-                };
-                g_oSetColor(self, newColor, nullptr);
+            if (getName) {
+                Il2CppString_Custom* compName = (Il2CppString_Custom*)getName(self);
+                if (compName && compName->chars) {
+                    if (wcsstr(compName->chars, L"TxtUID") != nullptr || 
+                        wcsstr(compName->chars, L"UID") != nullptr) {
+                        isTarget = true;
+                        }
+                }
             }
             
-            return;
+            if (isTarget) {
+                BuildFakeStrings(value->klass);
+                
+                Il2CppString_Custom* rep = (Il2CppString_Custom*)&g_strUID;
+                g_oSetText(self, rep, method);
+                
+                if (Config::Get().enable_custom_uid_color && g_oSetColor) {
+                    UnityColor newColor = {
+                        Config::Get().custom_uid_color_r,
+                        Config::Get().custom_uid_color_g,
+                        Config::Get().custom_uid_color_b,
+                        Config::Get().custom_uid_color_a
+                    };
+                    g_oSetColor(self, newColor, nullptr);
+                }
+                
+                return;
+            }
         }
         
         g_oSetText(self, value, method);
