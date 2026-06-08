@@ -1,7 +1,7 @@
 #pragma once
 #include <functional>
 #include <iostream>
-#include "il2cpp/Il2CppObject.h"
+#include "../il2cpp/Il2CppObject.h"
 
 struct Il2CppString {
     Il2CppObject object;

@@ -5,7 +5,7 @@
 #include <vector>
 #include <iostream>
 
-#include "Config.h"
+#include "../Config/Config.h"
 
 namespace Scanner {
 

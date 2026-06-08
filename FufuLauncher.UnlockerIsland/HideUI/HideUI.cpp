@@ -1,0 +1,139 @@
+#include "HideUI.h"
+#include "../Patterns/Patterns.h"
+#include "../Config/Config.h"
+#include "../Core/Utils.h"
+#include <iostream>
+#include <ctime>
+
+static HWND g_hGameWindow = NULL;
+
+bool CheckWindowFocused(HWND window) {
+    if (!window) return false;
+    DWORD foregroundProcessId = 0;
+    GetWindowThreadProcessId(window, &foregroundProcessId);
+    return foregroundProcessId == GetCurrentProcessId();
+}
+
+void UpdateHideUID() {
+    auto& config = Config::Get();
+    if (!config.hide_uid) return;
+
+    static float last_check_time = 0.0f;
+    float current_time = (float)clock() / CLOCKS_PER_SEC;
+
+    auto SetActive = (tSetActive)o_SetActive.load();
+    if (!SetActive) return;
+
+    if (current_time - last_check_time > 2.0f) {
+        last_check_time = current_time;
+
+        auto FindString = (tFindString)p_FindString.load();
+        auto FindGameObject = (tFindGameObject)p_FindGameObject.load();
+
+        if (FindString && FindGameObject) {
+            auto str_obj = FindString(GameStrings::UIDPathWatermark);
+            if (str_obj) {
+                void* foundObj = FindGameObject(str_obj);
+                if (foundObj) {
+                    SetActive(foundObj, false);
+                }
+            }
+        }
+    }
+}
+
+void UpdateHideMainUI() {
+    auto& config = Config::Get();
+    if (!config.hide_main_ui) return;
+
+    static float last_check_time = 0.0f;
+
+    auto SetActive = (tSetActive)o_SetActive.load();
+    if (!SetActive) return;
+
+    float current_time = (float)clock() / CLOCKS_PER_SEC;
+    if (current_time - last_check_time > 2.0f) {
+        last_check_time = current_time;
+
+        auto FindString = (tFindString)p_FindString.load();
+        auto FindGameObject = (tFindGameObject)p_FindGameObject.load();
+
+        if (FindString && FindGameObject) {
+            auto str_obj = FindString(GameStrings::UIDPathMain);
+            if (str_obj) {
+                void* foundObj = FindGameObject(str_obj);
+                if (foundObj) {
+                    SetActive(foundObj, false);
+                }
+            }
+        }
+    }
+}
+
+void UpdateTitleWatermark() {
+    if (!Config::Get().enable_custom_title) return;
+
+    if (!g_hGameWindow || !IsWindow(g_hGameWindow)) {
+        HWND hForeground = GetForegroundWindow();
+        if (hForeground && CheckWindowFocused(hForeground)) {
+            g_hGameWindow = hForeground;
+        }
+    }
+
+    if (!g_hGameWindow) return;
+
+    static ULONGLONG lastTick = 0;
+    ULONGLONG currentTick = GetTickCount64();
+    if (currentTick - lastTick < 500) return;
+    lastTick = currentTick;
+
+    SetWindowTextA(g_hGameWindow, Config::Get().custom_title_text.c_str());
+}
+
+void WINAPI hk_SetupQuestBanner(void* __this) {
+    auto& cfg = Config::Get();
+    auto findStr = (tFindString)p_FindString.load();
+    auto findGO = (tFindGameObject)p_FindGameObject.load();
+    auto setActive = (tSetActive)o_SetActive.load();
+
+    if (IsValid(findStr) && IsValid(findGO) && IsValid(setActive)) {
+        static bool s_is_hidden = false;
+
+        if (cfg.hide_quest_banner) {
+            static ULONGLONG last_check_time = 0;
+            ULONGLONG current_time = GetTickCount64();
+
+            if (current_time - last_check_time >= 500) {
+                last_check_time = current_time;
+                bool found = false;
+
+                SafeInvoke([&]
+                {
+                    auto s = findStr(GameStrings::QuestBannerPath);
+                    if (s) {
+                        auto go = findGO(s);
+                        if (go) {
+                            setActive(go, false);
+                            found = true;
+                        }
+                    }
+                });
+
+                s_is_hidden = found;
+            }
+
+            if (s_is_hidden) return;
+        } else {
+            s_is_hidden = false;
+        }
+    }
+
+    auto orig = (tSetupQuestBanner)o_SetupQuestBanner.load();
+    if (orig) orig(__this);
+}
+
+void WINAPI hk_ShowDamage(void* a, int b, int c, int d, float e, Il2CppString* f, void* g, void* h, int i) {
+    if (Config::Get().disable_show_damage_text) return;
+    auto orig = (tShowDamage)o_ShowDamage.load();
+    if (orig) orig(a, b, c, d, e, f, g, h, i);
+}

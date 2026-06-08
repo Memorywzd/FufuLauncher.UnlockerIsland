@@ -15,7 +15,7 @@
 #include <mutex>
 #include <atomic>
 
-#include "Config.h"
+#include "../Config/Config.h"
 #include "Hooks.h"
 
 #pragma comment(lib, "psapi.lib")

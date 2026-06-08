@@ -1,8 +1,8 @@
 #include "GamepadHotSwitch.h"
-#include "Hooks.h"
-#include "Scanner.h"
-#include "EncryptedData.h"
-#include "Utils.h"
+#include "../Core/Hooks.h"
+#include "../Scanner/Scanner.h"
+#include "../Patterns/Patterns.h"
+#include "../Core/Utils.h"
 #include <iostream>
 #include <commctrl.h>
 
@@ -191,8 +191,7 @@ bool GamepadHotSwitch::Initialize()
 
     // Scan for required functions
     if (!pSwitchInputDeviceToKeyboard) {
-        std::string pattern = XorString::decrypt(EncryptedPatterns::SwitchInputDeviceToKeyboard);
-        pSwitchInputDeviceToKeyboard = Scanner::ScanMainMod(pattern);
+        pSwitchInputDeviceToKeyboard = Scanner::ScanMainMod(Patterns::SwitchInputDeviceToKeyboard);
         if (pSwitchInputDeviceToKeyboard) {
             std::cout << "[GamepadHotSwitch] Found SwitchInputDeviceToKeyboard at: " << std::hex << pSwitchInputDeviceToKeyboard << std::dec << std::endl;
         } else {
@@ -201,8 +200,7 @@ bool GamepadHotSwitch::Initialize()
     }
 
     if (!pSwitchInputDeviceToJoypad) {
-        std::string pattern = XorString::decrypt(EncryptedPatterns::SwitchInputDeviceToJoypad);
-        pSwitchInputDeviceToJoypad = Scanner::ScanMainMod(pattern);
+        pSwitchInputDeviceToJoypad = Scanner::ScanMainMod(Patterns::SwitchInputDeviceToJoypad);
         if (pSwitchInputDeviceToJoypad) {
             std::cout << "[GamepadHotSwitch] Found SwitchInputDeviceToJoypad at: " << std::hex << pSwitchInputDeviceToJoypad << std::dec << std::endl;
         } else {

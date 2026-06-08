@@ -48,8 +48,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -133,6 +133,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -141,24 +142,42 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Config.h" />
-    <ClInclude Include="EncryptedData.h" />
-    <ClInclude Include="Hooks.h" />
-    <ClInclude Include="GamepadHotSwitch.h" />
+    <ClInclude Include="Config\Config.h" />
+    <ClInclude Include="Core\Hooks.h" />
+    <ClInclude Include="GamepadHotSwitch\GamepadHotSwitch.h" />
+    <ClInclude Include="Core\SharedState.h" />
+    <ClInclude Include="Patterns\Patterns.h" />
+    <ClInclude Include="FreeCam\FreeCam.h" />
+    <ClInclude Include="Automation\Automation.h" />
+    <ClInclude Include="CustomUID\CustomUID.h" />
+    <ClInclude Include="RainbowDamage\RainbowDamage.h" />
+    <ClInclude Include="Paimon\Paimon.h" />
+    <ClInclude Include="HideUI\HideUI.h" />
+    <ClInclude Include="Network\Network.h" />
+    <ClInclude Include="Visual\Visual.h" />
     <ClInclude Include="il2cpp\Il2CppArray.h" />
     <ClInclude Include="il2cpp\Il2CppList.h" />
     <ClInclude Include="il2cpp\Il2CppObject.h" />
     <ClInclude Include="MinHook\MinHook.h" />
-    <ClInclude Include="Scanner.h" />
-    <ClInclude Include="Utils.h" />
-    <ClInclude Include="XorString.h" />
+    <ClInclude Include="Scanner\Scanner.h" />
+    <ClInclude Include="Core\Utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Config.cpp" />
-    <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="Hooks.cpp" />
-    <ClCompile Include="GamepadHotSwitch.cpp" />
-    <ClCompile Include="Scanner.cpp" />
+    <ClCompile Include="Config\Config.cpp" />
+    <ClCompile Include="Core\dllmain.cpp" />
+    <ClCompile Include="Core\Hooks.cpp" />
+    <ClCompile Include="GamepadHotSwitch\GamepadHotSwitch.cpp" />
+    <ClCompile Include="Scanner\Scanner.cpp" />
+    <ClCompile Include="Core\SharedState.cpp" />
+    <ClCompile Include="Patterns\Patterns.cpp" />
+    <ClCompile Include="FreeCam\FreeCam.cpp" />
+    <ClCompile Include="Automation\Automation.cpp" />
+    <ClCompile Include="CustomUID\CustomUID.cpp" />
+    <ClCompile Include="RainbowDamage\RainbowDamage.cpp" />
+    <ClCompile Include="Paimon\Paimon.cpp" />
+    <ClCompile Include="HideUI\HideUI.cpp" />
+    <ClCompile Include="Network\Network.cpp" />
+    <ClCompile Include="Visual\Visual.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MinHook\libMinHook.x64.lib" />
